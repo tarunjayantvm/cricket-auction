@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-container">
+    <div class="panel player-form">
+        <h2>Add Player</h2>
+        <form action="/add_player" method="POST" enctype="multipart/form-data">
+            <input type="text" name="name" placeholder="Player Name" required>
+            <input type="text" name="type" placeholder="Role" required>
+            <input type="text" name="runs" placeholder="Total Runs">
+            <input type="text" name="average" placeholder="Batting Average">
+            <input type="text" name="strike_rate" placeholder="Strike Rate">
+            <input type="file" name="image" accept="image/*">
+            <button type="submit">Add Player</button>
+        </form>
+    </div>
+
+    <div class="panel auction-area">
+        <h2>Current Auction</h2>
+        <div class="auction-info">
+            <div id="currentPlayer" class="current-player"></div>
+            <div id="currentBid" class="current-bid">Current Bid: 25</div>
+            <div id="timer" class="timer">20</div>
+        </div>
+        <div class="auction-controls">
+            <button class="btn sold" onclick="markSold()">Mark Sold</button>
+            <button class="btn unsold" onclick="markUnsold()">Mark Unsold</button>
+            <button class="btn next-player" onclick="chooseNextPlayer()">Choose Next Player</button>
+        </div>
+        <div id="biddingLog" class="bidding-log">
+            <h3>Bidding Log</h3>
+            <ul id="bidList"></ul>
+        </div>
+    </div>
+
+    <div class="panel players-list">
+        <h2>Players List</h2>
+        <ul id="playersList">
+            {% for player in players %}
+            <li>
+                {{ player.name }} - {{ player.type }} - Runs: {{ player.runs }}, Avg: {{ player.average }}, SR: {{ player.strike_rate }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="panel sold-players">
+        <h2>Sold Players</h2>
+        <ul id="soldPlayersList"></ul>
+    </div>
+
+    <div class="panel unsold-players">
+        <h2>Unsold Players</h2>
+        <ul id="unsoldPlayersList"></ul>
+    </div>
+
+    <div class="panel bidders-info">
+        <h2>Bidders Capital</h2>
+        <ul id="biddersList"></ul>
+    </div>
+</div>
+
+<script>
+const socket = io();
+let timer;
+
+function startTimer() {
+    if (timer) clearInterval(timer);
+    let time = 20;
+    document.getElementById('timer').textContent = time;
+    timer = setInterval(() => {
+        time--;
+        document.getElementById('timer').textContent = time;
+        if (time <= 0) clearInterval(timer);
+    }, 1000);
+}
+
+function markSold() {
+    socket.emit('mark_sold');
+}
+
+function markUnsold() {
+    socket.emit('mark_unsold');
+    if (timer) clearInterval(timer);
+    document.getElementById('timer').textContent = "20";
+    document.getElementById('currentPlayer').innerHTML = "";
+    document.getElementById('currentBid').textContent = "Current Bid: 25";
+    document.getElementById('bidList').innerHTML = "";
+}
+
+function chooseNextPlayer() {
+    fetch('/start_auction', { method: 'POST' });
+    startTimer();
+}
+
+socket.on('auction_started', (player) => {
+    let html = `<strong>${player.name}</strong> (${player.type})<br>`;
+    html += `Runs: ${player.runs}, Avg: ${player.average}, SR: ${player.strike_rate}<br>`;
+    if (player.image) {
+        html += `<img src="/uploads/${player.image}" alt="${player.name}" width="100">`;
+    }
+    document.getElementById('currentPlayer').innerHTML = html;
+    document.getElementById('currentBid').textContent = `Current Bid: ${player.basePrice || 25}`;
+    document.getElementById('bidList').innerHTML = "";
+    startTimer();
+});
+
+socket.on('new_bid', (data) => {
+    document.getElementById('currentBid').textContent = `Current Bid: ${data.amount}`;
+    const li = document.createElement('li');
+    li.textContent = `${data.bidder} bid ${data.amount}`;
+    document.getElementById('bidList').appendChild(li);
+});
+
+socket.on('admin_update', (data) => {
+    const soldList = document.getElementById('soldPlayersList');
+    soldList.innerHTML = "";
+    data.sold_players.forEach(player => {
+        const li = document.createElement('li');
+        li.textContent = `${player.name} - ₹${player.sold_price}L by ${player.winner || 'N/A'}`;
+        soldList.appendChild(li);
+    });
+
+    const unsoldList = document.getElementById('unsoldPlayersList');
+    unsoldList.innerHTML = "";
+    data.unsold_players.forEach(player => {
+        const li = document.createElement('li');
+        li.textContent = player.name;
+        unsoldList.appendChild(li);
+    });
+
+    const biddersList = document.getElementById('biddersList');
+    biddersList.innerHTML = "";
+    for (let bidder in data.bidders) {
+        const li = document.createElement('li');
+        li.textContent = `${bidder}: ₹${data.bidders[bidder].capital}L`;
+        biddersList.appendChild(li);
+    }
+});
+</script>
+{% endblock %}

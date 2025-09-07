@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bidder-container">
+    <div class="bidder-info">
+        <h2>Welcome {{ current_user.id }}</h2>
+        <div id="capital">Remaining Capital: {{ capital }}</div>
+    </div>
+
+    <div class="current-auction">
+        <h2>Current Player</h2>
+        <div id="currentPlayer"></div>
+        <div id="currentBid">Current Bid: 25</div>
+        <div class="bid-buttons">
+            <button onclick="placeBid(10)">+10</button>
+            <button onclick="placeBid(25)">+25</button>
+            <button onclick="placeBid(50)">+50</button>
+            <button onclick="placeBid(100)">+100</button>
+        </div>
+    </div>
+
+    <div class="auction-history">
+        <h2>Your Purchased Players</h2>
+        <div id="purchasedPlayers"></div>
+    </div>
+</div>
+
+<script>
+const socket = io();
+
+function placeBid(increment) {
+    const currentBidText = document.getElementById('currentBid').textContent.split(': ')[1];
+    const currentBid = parseInt(currentBidText);
+    const newBid = currentBid + increment;
+    fetch('/bid', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `bid_amount=${newBid}`
+    }).then(() => {});
+}
+
+socket.on('auction_started', (player) => {
+    let html = `<strong>${player.name}</strong> (${player.type})<br>`;
+    html += `Runs: ${player.runs}, Avg: ${player.average}, SR: ${player.strike_rate}<br>`;
+    if (player.image) {
+        html += `<img src="/uploads/${player.image}" alt="${player.name}" width="100">`;
+    }
+    document.getElementById('currentPlayer').innerHTML = html;
+    document.getElementById('currentBid').textContent = `Current Bid: ${player.basePrice || 25}`;
+});
+
+socket.on('new_bid', (data) => {
+    document.getElementById('currentBid').textContent = `Current Bid: ${data.amount}`;
+});
+
+socket.on('auction_end', (data) => {
+    if (data.winner === '{{ current_user.id }}') {
+        const player = {name: data.player, sold_price: data.amount};
+        updatePurchasedPlayers(player);
+    }
+});
+
+function updatePurchasedPlayers(player) {
+    const purchasedPlayers = document.getElementById('purchasedPlayers');
+    purchasedPlayers.innerHTML += `<div>${player.name} (Sold for: ₹${player.sold_price}L)</div>`;
+}
+</script>
+{% endblock %}
