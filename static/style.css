@@ -1,4 +1,4 @@
-/* Reset and basic styling */
+/* Reset and base styles */
 * {
     margin: 0;
     padding: 0;
@@ -6,242 +6,585 @@
 }
 
 body {
-    font-family: 'Roboto', sans-serif;
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-    color: #f0f0f0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298, #3b82f6);
+    color: #ffffff;
+    min-height: 100vh;
+}
+
+/* Namma Cricket Branding */
+.brand-header {
+    background: linear-gradient(90deg, #ff6b35, #f7931e);
+    padding: 15px 0;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.brand-header h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    margin: 0;
+}
+
+.brand-tagline {
+    font-size: 1rem;
+    color: #ffffff;
+    opacity: 0.9;
+    margin-top: 5px;
+}
+
+/* Login Page Styles */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
     padding: 20px;
 }
 
-/* Login & Register */
-.login-container, .auth-container {
-    max-width: 400px;
-    margin: 50px auto;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+.login-card {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 450px;
     text-align: center;
 }
-.login-form input, .auth-container input {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0;
-    border: none;
-    border-radius: 5px;
-}
-.login-form button, .auth-container button {
-    width: 100%;
-    padding: 12px;
-    background: #ff416c;
-    border: none;
-    border-radius: 5px;
-    color: #fff;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-.login-form button:hover, .auth-container button:hover {
-    background: #ff4b2b;
+
+.login-card h2 {
+    color: #1e3c72;
+    margin-bottom: 30px;
+    font-size: 2rem;
+    font-weight: 600;
 }
 
-/* Panels for layout */
-.panel {
-    background: rgba(0, 0, 0, 0.6);
-    padding: 20px;
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e1e5e9;
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background: #ffffff;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(90deg, #3b82f6, #1e40af);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Dashboard Styles */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.welcome-section {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.welcome-section h2 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    color: #ffffff;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.dashboard-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 25px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+}
+
+.dashboard-card h3 {
+    color: #ff6b35;
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+}
+
+.news-item {
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.news-item:last-child {
+    border-bottom: none;
+}
+
+.news-title {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.news-date {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+/* Event Registration */
+.event-registration {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 25px;
+    border-radius: 15px;
+    margin-top: 20px;
+}
+
+.event-registration h3 {
+    color: #ff6b35;
     margin-bottom: 20px;
 }
 
-/* Grid layout for admin container */
-.admin-container {
+.registration-form {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* Auction Interface */
+.auction-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.auction-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 25px;
+}
+
+.auction-main {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.current-player-display {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+}
+
+.player-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 15px;
+    border: 4px solid #ff6b35;
+}
+
+.player-name {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #ffffff;
+}
+
+.player-details {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 20px;
+}
+
+.current-bid-display {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ff6b35;
+    margin-bottom: 20px;
+}
+
+.bidding-controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+}
+
+.bid-btn {
+    padding: 15px 25px;
+    background: linear-gradient(90deg, #10b981, #059669);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.bid-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+}
+
+.bid-btn:disabled {
+    background: #6b7280;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Admin Controls */
+.admin-controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.admin-btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-sold {
+    background: linear-gradient(90deg, #3b82f6, #1e40af);
+    color: white;
+}
+
+.btn-unsold {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.btn-next {
+    background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+    color: white;
+}
+
+.admin-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+
+/* Sidebar */
+.auction-sidebar {
+    display: flex;
+    flex-direction: column;
     gap: 20px;
 }
 
-/* Styling for the player form */
-.player-form h2 {
-    margin-bottom: 10px;
-    font-size: 1.75rem;
-}
-.player-form input {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border: none;
-    border-radius: 5px;
-}
-.player-form button {
-    width: 100%;
-    padding: 10px;
-    background: #00b894;
-    border: none;
-    border-radius: 5px;
-    color: #fff;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-.player-form button:hover {
-    background: #019875;
-}
-
-/* Auction area styling */
-.auction-area {
-    position: relative;
-}
-.auction-area h2 {
-    margin-bottom: 10px;
-    font-size: 1.75rem;
-}
-.auction-info {
-    margin-bottom: 15px;
-}
-.current-player {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-.current-bid {
-    font-size: 1.5rem;
-    margin-bottom: 5px;
-}
-.timer {
-    font-size: 2.5rem;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-/* Auction control buttons */
-.auction-controls {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-.auction-controls .btn {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-.auction-controls .sold {
-    background: #0984e3;
-    color: #fff;
-}
-.auction-controls .sold:hover {
-    background: #74b9ff;
-}
-.auction-controls .unsold {
-    background: #d63031;
-    color: #fff;
-}
-.auction-controls .unsold:hover {
-    background: #ff7675;
-}
-.auction-controls .next-player {
-    background: #6c5ce7;
-    color: #fff;
-}
-.auction-controls .next-player:hover {
-    background: #a29bfe;
-}
-
-/* Bidding log styling */
-.bidding-log {
+.sidebar-card {
     background: rgba(255, 255, 255, 0.1);
-    padding: 10px;
-    border-radius: 5px;
-}
-.bidding-log h3 {
-    margin-bottom: 10px;
-    font-size: 1.2rem;
-}
-.bidding-log ul {
-    list-style-type: none;
-    max-height: 150px;
-    overflow-y: auto;
-}
-.bidding-log li {
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Players list styling */
-.players-list ul {
-    list-style-type: none;
-    max-height: 250px;
-    overflow-y: auto;
-}
-.players-list li {
-    padding: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Panels for Sold/Unsold & Bidders */
-.sold-players, .unsold-players, .bidders-info {
-    background: rgba(0, 0, 0, 0.6);
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    margin-bottom: 20px;
-}
-.sold-players h2, .unsold-players h2, .bidders-info h2 {
-    margin-bottom: 10px;
-    font-size: 1.75rem;
-}
-.sold-players ul, .unsold-players ul, .bidders-info ul {
-    list-style-type: none;
-    max-height: 200px;
-    overflow-y: auto;
-}
-.sold-players li, .unsold-players li, .bidders-info li {
-    padding: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Bidder specific styling */
-.bidder-container {
-    max-width: 800px;
-    margin: 30px auto;
-    background: rgba(0, 0, 0, 0.75);
     padding: 20px;
     border-radius: 15px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
 }
-.bidder-info h2 {
+
+.sidebar-card h3 {
+    color: #ff6b35;
     margin-bottom: 15px;
-    font-size: 2rem;
+    font-size: 1.3rem;
 }
-.bidder-info #capital {
-    font-size: 1.5rem;
+
+.bidder-list {
+    list-style: none;
+}
+
+.bidder-item {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bidder-item:last-child {
+    border-bottom: none;
+}
+
+.bidder-name {
+    font-weight: 600;
+}
+
+.bidder-capital {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.sold-players-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.sold-player-item {
+    padding: 12px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border-left: 4px solid #10b981;
+}
+
+.sold-player-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.sold-player-details {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* Voice Communication */
+.voice-controls {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.voice-btn {
+    padding: 15px 30px;
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.voice-btn:hover {
+    transform: scale(1.05);
+}
+
+.voice-btn.recording {
+    background: linear-gradient(90deg, #10b981, #059669);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Event Management */
+.event-management {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+}
+
+.event-form {
+    display: grid;
+    gap: 15px;
     margin-bottom: 20px;
 }
-.current-auction h2, .auction-history h2 {
-    font-size: 1.75rem;
+
+.event-list {
+    list-style: none;
+}
+
+.event-item {
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.event-status {
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #10b981;
+    color: white;
+}
+
+.status-created {
+    background: #f59e0b;
+    color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .auction-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .bidding-controls {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .admin-controls {
+        flex-direction: column;
+    }
+    
+    .brand-header h1 {
+        font-size: 2rem;
+    }
+    
+    .current-bid-display {
+        font-size: 2rem;
+    }
+    
+    .player-name {
+        font-size: 2rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Loading States */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Success/Error Messages */
+.alert {
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.alert-success {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid #10b981;
+    color: #10b981;
+}
+
+.alert-error {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid #ef4444;
+    color: #ef4444;
+}
+
+/* Spectator Mode */
+.spectator-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.spectator-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+}
+
+.live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #ef4444;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
     margin-bottom: 10px;
 }
-.bid-buttons button {
-    margin: 5px;
-    padding: 10px 20px;
-    background: #ff416c;
-    border: none;
-    border-radius: 5px;
-    color: #fff;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-.bid-buttons button:hover {
-    transform: scale(1.1);
-}
-.auction-history #purchasedPlayers div {
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.2);
-    margin: 5px 0;
-    border-radius: 5px;
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
 }

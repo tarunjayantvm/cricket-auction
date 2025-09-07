@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Spectate Auction - Namma Cricket{% endblock %}
+
+{% block content %}
+<div class="spectator-container">
+    <div class="spectator-header fade-in">
+        <div class="live-indicator">
+            <div class="live-dot"></div>
+            LIVE AUCTION
+        </div>
+        <h2>🏏 Namma Cricket Live Auction</h2>
+        <p>You are watching the live auction as a spectator</p>
+    </div>
+    
+    <div class="auction-grid">
+        <div class="auction-main fade-in">
+            <!-- Current Player Display -->
+            <div class="current-player-display" id="currentPlayerDisplay">
+                <div id="noPlayerMessage">
+                    <h3>🏏 Ready for Auction</h3>
+                    <p>Waiting for admin to start the next player auction...</p>
+                </div>
+            </div>
+            
+            <!-- Spectator Info -->
+            <div style="text-align: center; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 15px; margin-top: 20px;">
+                <h3>👀 Spectator Mode</h3>
+                <p>You can watch the auction and hear all communications between admin and bidders.</p>
+                <p style="margin-top: 10px; opacity: 0.8;">
+                    <strong>Current Viewers:</strong> <span id="viewerCount">1</span>
+                </p>
+            </div>
+            
+            <!-- Bidding Log -->
+            <div class="sidebar-card" style="margin-top: 20px;">
+                <h3>📊 Live Bidding Activity</h3>
+                <div id="biddingLog" style="max-height: 200px; overflow-y: auto;">
+                    <p style="opacity: 0.7; text-align: center;">Bidding activity will appear here...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="auction-sidebar">
+            <!-- Current Bidders -->
+            <div class="sidebar-card">
+                <h3>💰 Active Bidders</h3>
+                <ul class="bidder-list" id="biddersList">
+                    <!-- Bidders will be populated here -->
+                </ul>
+            </div>
+            
+            <!-- Sold Players -->
+            <div class="sidebar-card">
+                <h3>✅ Sold Players</h3>
+                <div class="sold-players-list" id="soldPlayersList">
+                    {% for player in sold_players %}
+                    <div class="sold-player-item">
+                        <div class="sold-player-name">{{ player.name }}</div>
+                        <div class="sold-player-details">
+                            {{ player.winner_name }} - ₹{{ player.sold_price }}L
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Auction Statistics -->
+            <div class="sidebar-card">
+                <h3>📈 Auction Stats</h3>
+                <div id="auctionStats">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>Total Sold:</span>
+                        <span id="totalSold">{{ sold_players|length }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>Total Value:</span>
+                        <span id="totalValue">₹{{ sold_players|sum(attribute='sold_price') or 0 }}L</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Avg Price:</span>
+                        <span id="avgPrice">₹{{ (sold_players|sum(attribute='sold_price') / sold_players|length)|round(1) if sold_players else 0 }}L</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentBid = {{ highest_bid if highest_bid else 0 }};
+
+// Socket event listeners
+socket.on('auction_started', (data) => {
+    const playerDisplay = document.getElementById('currentPlayerDisplay');
+    playerDisplay.innerHTML = `
+        ${data.player.image ? `<img src="/uploads/${data.player.image}" alt="${data.player.name}" class="player-image">` : ''}
+        <div class="player-name">${data.player.name}</div>
+        <div class="player-details">
+            ${data.player.role}${data.player.team ? ` | ${data.player.team}` : ''}
+            ${data.player.stats ? `<br>${data.player.stats}` : ''}
+        </div>
+        <div class="current-bid-display" id="currentBidDisplay">₹${data.base_price}L</div>
+        <div style="font-size: 1.1rem; opacity: 0.8;">Current Highest Bid</div>
+    `;
+    
+    // Clear bidding log
+    document.getElementById('biddingLog').innerHTML = '<p style="opacity: 0.7; text-align: center;">Auction started! Watch the bidding...</p>';
+    
+    showAlert(`Auction started for ${data.player.name}!`, 'success');
+});
+
+socket.on('new_bid', (data) => {
+    currentBid = data.amount;
+    
+    // Update current bid display
+    const bidDisplay = document.getElementById('currentBidDisplay');
+    if (bidDisplay) {
+        bidDisplay.textContent = `₹${data.amount}L`;
+        bidDisplay.style.animation = 'none';
+        setTimeout(() => {
+            bidDisplay.style.animation = 'pulse 0.5s ease-in-out';
+        }, 10);
+    }
+    
+    // Add to bidding log
+    const biddingLog = document.getElementById('biddingLog');
+    const logEntry = document.createElement('div');
+    logEntry.style.cssText = 'padding: 8px; margin: 5px 0; background: rgba(255,255,255,0.1); border-radius: 5px; border-left: 3px solid #10b981;';
+    logEntry.innerHTML = `
+        <strong>${data.bidder_name}</strong> bid <span style="color: #10b981; font-weight: bold;">₹${data.amount}L</span>
+        <div style="font-size: 0.8rem; opacity: 0.7;">${new Date().toLocaleTimeString()}</div>
+    `;
+    biddingLog.insertBefore(logEntry, biddingLog.firstChild);
+    
+    // Keep only last 10 entries
+    while (biddingLog.children.length > 10) {
+        biddingLog.removeChild(biddingLog.lastChild);
+    }
+});
+
+socket.on('auction_end', (data) => {
+    // Reset display
+    document.getElementById('currentPlayerDisplay').innerHTML = `
+        <div id="noPlayerMessage">
+            <h3>🏏 Auction Complete</h3>
+            <p>${data.status === 'sold' ? 
+                `${data.player} sold to ${data.winner_name} for ₹${data.amount}L!` : 
+                `${data.player} went unsold`}</p>
+            <p style="margin-top: 15px;">Waiting for next player...</p>
+        </div>
+    `;
+    
+    // Update sold players list
+    if (data.status === 'sold') {
+        const soldList = document.getElementById('soldPlayersList');
+        const soldItem = document.createElement('div');
+        soldItem.className = 'sold-player-item fade-in';
+        soldItem.innerHTML = `
+            <div class="sold-player-name">${data.player}</div>
+            <div class="sold-player-details">${data.winner_name} - ₹${data.amount}L</div>
+        `;
+        soldList.insertBefore(soldItem, soldList.firstChild);
+        
+        // Update statistics
+        updateAuctionStats();
+    }
+    
+    showAlert(data.status === 'sold' ? 
+        `${data.player} sold to ${data.winner_name} for ₹${data.amount}L!` : 
+        `${data.player} went unsold`, 
+        data.status === 'sold' ? 'success' : 'error');
+});
+
+// Voice communication listeners
+socket.on('admin_voice_broadcast', (data) => {
+    // Play admin audio
+    const audio = new Audio(data.audio_data);
+    audio.play().catch(e => console.log('Audio play failed:', e));
+    
+    // Show visual indicator
+    showAlert('🎙️ Admin speaking...', 'success');
+});
+
+socket.on('bidder_voice_broadcast', (data) => {
+    // Play bidder audio
+    const audio = new Audio(data.audio_data);
+    audio.play().catch(e => console.log('Audio play failed:', e));
+    
+    // Show visual indicator
+    showAlert(`🎙️ ${data.bidder_name} speaking...`, 'success');
+});
+
+// Update bidder information
+socket.on('bidder_update', (bidders) => {
+    const biddersList = document.getElementById('biddersList');
+    biddersList.innerHTML = '';
+    
+    for (const [username, bidder] of Object.entries(bidders)) {
+        const li = document.createElement('li');
+        li.className = 'bidder-item';
+        li.innerHTML = `
+            <span class="bidder-name">${bidder.full_name}</span>
+            <span class="bidder-capital">₹${bidder.capital}L</span>
+        `;
+        biddersList.appendChild(li);
+    }
+});
+
+// Update auction statistics
+function updateAuctionStats() {
+    const soldItems = document.querySelectorAll('#soldPlayersList .sold-player-item');
+    const totalSold = soldItems.length;
+    
+    let totalValue = 0;
+    soldItems.forEach(item => {
+        const priceText = item.querySelector('.sold-player-details').textContent;
+        const price = parseInt(priceText.match(/₹(\d+)L/)?.[1] || 0);
+        totalValue += price;
+    });
+    
+    const avgPrice = totalSold > 0 ? (totalValue / totalSold).toFixed(1) : 0;
+    
+    document.getElementById('totalSold').textContent = totalSold;
+    document.getElementById('totalValue').textContent = `₹${totalValue}L`;
+    document.getElementById('avgPrice').textContent = `₹${avgPrice}L`;
+}
+
+// Join auction room as spectator
+socket.emit('join_auction', {});
+
+// Initialize stats
+updateAuctionStats();
+</script>
+{% endblock %}

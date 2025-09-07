@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}Live Auction - Namma Cricket{% endblock %}
+
+{% block content %}
+<div class="auction-container">
+    <!-- Voice Communication Controls -->
+    <div class="voice-controls fade-in">
+        <h3>🎙️ Voice Communication</h3>
+        {% if user_role == 'admin' %}
+            <button id="adminVoiceBtn" class="voice-btn">Hold to Speak (Admin)</button>
+        {% else %}
+            <button id="bidderVoiceBtn" class="voice-btn">Hold to Speak</button>
+        {% endif %}
+        <div id="voiceStatus" style="margin-top: 10px; font-size: 0.9rem;"></div>
+    </div>
+    
+    <div class="auction-grid">
+        <div class="auction-main fade-in">
+            <!-- Current Player Display -->
+            <div class="current-player-display" id="currentPlayerDisplay">
+                <div id="noPlayerMessage">
+                    <h3>🏏 Ready for Auction</h3>
+                    <p>Waiting for admin to start the next player auction...</p>
+                </div>
+            </div>
+            
+            <!-- Bidding Controls (for bidders) -->
+            {% if user_role == 'bidder' %}
+            <div class="bidding-controls" id="biddingControls" style="display: none;">
+                <button class="bid-btn" onclick="placeBid(10)">+₹10L</button>
+                <button class="bid-btn" onclick="placeBid(25)">+₹25L</button>
+                <button class="bid-btn" onclick="placeBid(50)">+₹50L</button>
+                <button class="bid-btn" onclick="placeBid(100)">+₹100L</button>
+                <button class="bid-btn" onclick="placeBid(200)">+₹200L</button>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <div style="font-size: 1.2rem; margin-bottom: 10px;">
+                    Your Remaining Capital: <span id="userCapital" style="color: #10b981; font-weight: bold;">₹{{ bidders[user.username].capital }}L</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Admin Controls -->
+            {% if user_role == 'admin' %}
+            <div class="admin-controls">
+                <button class="admin-btn btn-next" onclick="startNextAuction()">Start Next Player</button>
+                <button class="admin-btn btn-sold" onclick="markSold()" id="soldBtn" disabled>Mark Sold</button>
+                <button class="admin-btn btn-unsold" onclick="markUnsold()" id="unsoldBtn" disabled>Mark Unsold</button>
+            </div>
+            {% endif %}
+            
+            <!-- Bidding Log -->
+            <div class="sidebar-card" style="margin-top: 20px;">
+                <h3>📊 Live Bidding Activity</h3>
+                <div id="biddingLog" style="max-height: 200px; overflow-y: auto;">
+                    <p style="opacity: 0.7; text-align: center;">Bidding activity will appear here...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="auction-sidebar">
+            <!-- Current Bidders -->
+            <div class="sidebar-card">
+                <h3>💰 Active Bidders</h3>
+                <ul class="bidder-list" id="biddersList">
+                    {% for username, bidder in bidders.items() %}
+                    <li class="bidder-item">
+                        <span class="bidder-name">{{ bidder.full_name }}</span>
+                        <span class="bidder-capital">₹{{ bidder.capital }}L</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- Sold Players -->
+            <div class="sidebar-card">
+                <h3>✅ Sold Players</h3>
+                <div class="sold-players-list" id="soldPlayersList">
+                    {% for player in sold_players %}
+                    <div class="sold-player-item">
+                        <div class="sold-player-name">{{ player.name }}</div>
+                        <div class="sold-player-details">
+                            {{ player.winner_name }} - ₹{{ player.sold_price }}L
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Your Purchased Players (for bidders) -->
+            {% if user_role == 'bidder' %}
+            <div class="sidebar-card">
+                <h3>🏆 Your Team</h3>
+                <div id="purchasedPlayers">
+                    {% for player in bidders[user.username].purchased_players %}
+                    <div class="sold-player-item" style="border-left-color: #10b981;">
+                        <div class="sold-player-name">{{ player.name }}</div>
+                        <div class="sold-player-details">₹{{ player.sold_price }}L</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+let currentAuctionActive = {{ 'true' if auction_active else 'false' }};
+let currentBid = {{ highest_bid if highest_bid else 0 }};
+let userRole = '{{ user_role }}';
+let mediaRecorder;
+let audioChunks = [];
+
+// Voice communication setup
+async function setupVoiceRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            const reader = new FileReader();
+            reader.onload = () => {
+                const audioData = reader.result;
+                if (userRole === 'admin') {
+                    socket.emit('admin_voice', { audio_data: audioData });
+                } else {
+                    socket.emit('bidder_voice', { audio_data: audioData });
+                }
+            };
+            reader.readAsDataURL(audioBlob);
+            audioChunks = [];
+        };
+        
+    } catch (error) {
+        console.error('Error accessing microphone:', error);
+        document.getElementById('voiceStatus').textContent = 'Microphone access denied';
+    }
+}
+
+// Voice button event listeners
+const voiceBtn = document.getElementById(userRole === 'admin' ? 'adminVoiceBtn' : 'bidderVoiceBtn');
+if (voiceBtn) {
+    voiceBtn.addEventListener('mousedown', () => {
+        if (mediaRecorder && mediaRecorder.state === 'inactive') {
+            mediaRecorder.start();
+            voiceBtn.classList.add('recording');
+            voiceBtn.textContent = '🔴 Recording...';
+            document.getElementById('voiceStatus').textContent = 'Recording audio...';
+        }
+    });
+    
+    voiceBtn.addEventListener('mouseup', () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            voiceBtn.classList.remove('recording');
+            voiceBtn.textContent = userRole === 'admin' ? 'Hold to Speak (Admin)' : 'Hold to Speak';
+            document.getElementById('voiceStatus').textContent = 'Audio sent';
+            setTimeout(() => {
+                document.getElementById('voiceStatus').textContent = '';
+            }, 2000);
+        }
+    });
+    
+    voiceBtn.addEventListener('mouseleave', () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            voiceBtn.classList.remove('recording');
+            voiceBtn.textContent = userRole === 'admin' ? 'Hold to Speak (Admin)' : 'Hold to Speak';
+        }
+    });
+}
+
+// Initialize voice recording
+setupVoiceRecording();
+
+// Bidding functions
+function placeBid(increment) {
+    if (!currentAuctionActive) {
+        showAlert('No active auction', 'error');
+        return;
+    }
+    
+    const newBid = currentBid + increment;
+    const formData = new FormData();
+    formData.append('bid_amount', newBid);
+    
+    fetch('/bid', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            showAlert(data.message || 'Bid failed', 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('Connection error', 'error');
+    });
+}
+
+// Admin functions
+async function startNextAuction() {
+    try {
+        const response = await fetch('/start_auction', {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentAuctionActive = true;
+            document.getElementById('soldBtn').disabled = false;
+            document.getElementById('unsoldBtn').disabled = false;
+        } else {
+            showAlert(data.message || 'Failed to start auction', 'error');
+        }
+    } catch (error) {
+        showAlert('Connection error', 'error');
+    }
+}
+
+function markSold() {
+    socket.emit('mark_sold');
+}
+
+function markUnsold() {
+    socket.emit('mark_unsold');
+}
+
+// Socket event listeners
+socket.on('auction_started', (data) => {
+    currentAuctionActive = true;
+    currentBid = data.base_price;
+    
+    const playerDisplay = document.getElementById('currentPlayerDisplay');
+    playerDisplay.innerHTML = `
+        ${data.player.image ? `<img src="/uploads/${data.player.image}" alt="${data.player.name}" class="player-image">` : ''}
+        <div class="player-name">${data.player.name}</div>
+        <div class="player-details">
+            ${data.player.role}${data.player.team ? ` | ${data.player.team}` : ''}
+            ${data.player.stats ? `<br>${data.player.stats}` : ''}
+        </div>
+        <div class="current-bid-display" id="currentBidDisplay">₹${data.base_price}L</div>
+        <div style="font-size: 1.1rem; opacity: 0.8;">Current Highest Bid</div>
+    `;
+    
+    // Show bidding controls for bidders
+    if (userRole === 'bidder') {
+        document.getElementById('biddingControls').style.display = 'flex';
+    }
+    
+    // Clear bidding log
+    document.getElementById('biddingLog').innerHTML = '<p style="opacity: 0.7; text-align: center;">Auction started! Place your bids...</p>';
+    
+    showAlert(`Auction started for ${data.player.name}!`, 'success');
+});
+
+socket.on('new_bid', (data) => {
+    currentBid = data.amount;
+    
+    // Update current bid display
+    const bidDisplay = document.getElementById('currentBidDisplay');
+    if (bidDisplay) {
+        bidDisplay.textContent = `₹${data.amount}L`;
+        bidDisplay.style.animation = 'none';
+        setTimeout(() => {
+            bidDisplay.style.animation = 'pulse 0.5s ease-in-out';
+        }, 10);
+    }
+    
+    // Add to bidding log
+    const biddingLog = document.getElementById('biddingLog');
+    const logEntry = document.createElement('div');
+    logEntry.style.cssText = 'padding: 8px; margin: 5px 0; background: rgba(255,255,255,0.1); border-radius: 5px; border-left: 3px solid #10b981;';
+    logEntry.innerHTML = `
+        <strong>${data.bidder_name}</strong> bid <span style="color: #10b981; font-weight: bold;">₹${data.amount}L</span>
+        <div style="font-size: 0.8rem; opacity: 0.7;">${new Date().toLocaleTimeString()}</div>
+    `;
+    biddingLog.insertBefore(logEntry, biddingLog.firstChild);
+    
+    // Keep only last 10 entries
+    while (biddingLog.children.length > 10) {
+        biddingLog.removeChild(biddingLog.lastChild);
+    }
+});
+
+socket.on('auction_end', (data) => {
+    currentAuctionActive = false;
+    
+    // Reset display
+    document.getElementById('currentPlayerDisplay').innerHTML = `
+        <div id="noPlayerMessage">
+            <h3>🏏 Auction Complete</h3>
+            <p>${data.status === 'sold' ? 
+                `${data.player} sold to ${data.winner_name} for ₹${data.amount}L!` : 
+                `${data.player} went unsold`}</p>
+            <p style="margin-top: 15px;">Waiting for next player...</p>
+        </div>
+    `;
+    
+    // Hide bidding controls
+    if (userRole === 'bidder') {
+        document.getElementById('biddingControls').style.display = 'none';
+    }
+    
+    // Reset admin buttons
+    if (userRole === 'admin') {
+        document.getElementById('soldBtn').disabled = true;
+        document.getElementById('unsoldBtn').disabled = true;
+    }
+    
+    // Update sold players list
+    if (data.status === 'sold') {
+        const soldList = document.getElementById('soldPlayersList');
+        const soldItem = document.createElement('div');
+        soldItem.className = 'sold-player-item fade-in';
+        soldItem.innerHTML = `
+            <div class="sold-player-name">${data.player}</div>
+            <div class="sold-player-details">${data.winner_name} - ₹${data.amount}L</div>
+        `;
+        soldList.insertBefore(soldItem, soldList.firstChild);
+        
+        // Update user's team if they won
+        if (userRole === 'bidder' && data.winner === '{{ user.username }}') {
+            const purchasedList = document.getElementById('purchasedPlayers');
+            if (purchasedList) {
+                const purchasedItem = document.createElement('div');
+                purchasedItem.className = 'sold-player-item fade-in';
+                purchasedItem.style.borderLeftColor = '#10b981';
+                purchasedItem.innerHTML = `
+                    <div class="sold-player-name">${data.player}</div>
+                    <div class="sold-player-details">₹${data.amount}L</div>
+                `;
+                purchasedList.appendChild(purchasedItem);
+            }
+        }
+    }
+    
+    showAlert(data.status === 'sold' ? 
+        `${data.player} sold to ${data.winner_name} for ₹${data.amount}L!` : 
+        `${data.player} went unsold`, 
+        data.status === 'sold' ? 'success' : 'error');
+});
+
+// Voice communication listeners
+socket.on('admin_voice_broadcast', (data) => {
+    // Play admin audio
+    const audio = new Audio(data.audio_data);
+    audio.play().catch(e => console.log('Audio play failed:', e));
+    
+    // Show visual indicator
+    showAlert('🎙️ Admin speaking...', 'success');
+});
+
+socket.on('bidder_voice_broadcast', (data) => {
+    // Play bidder audio
+    const audio = new Audio(data.audio_data);
+    audio.play().catch(e => console.log('Audio play failed:', e));
+    
+    // Show visual indicator
+    showAlert(`🎙️ ${data.bidder_name} speaking...`, 'success');
+});
+
+// Join auction room
+socket.emit('join_auction', {});
+
+// Update bidder capitals in real-time
+socket.on('bidder_update', (bidders) => {
+    const biddersList = document.getElementById('biddersList');
+    biddersList.innerHTML = '';
+    
+    for (const [username, bidder] of Object.entries(bidders)) {
+        const li = document.createElement('li');
+        li.className = 'bidder-item';
+        li.innerHTML = `
+            <span class="bidder-name">${bidder.full_name}</span>
+            <span class="bidder-capital">₹${bidder.capital}L</span>
+        `;
+        biddersList.appendChild(li);
+    }
+    
+    // Update user's capital if they're a bidder
+    if (userRole === 'bidder') {
+        const userCapitalElement = document.getElementById('userCapital');
+        if (userCapitalElement && bidders['{{ user.username }}']) {
+            userCapitalElement.textContent = `₹${bidders['{{ user.username }}'].capital}L`;
+        }
+    }
+});
+</script>
+{% endblock %}

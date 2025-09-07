@@ -1,11 +1,49 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Cricket Auction Platform</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Namma Cricket Auction Platform{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    {% block content %}{% endblock %}
+    <div class="brand-header">
+        <h1>🏏 NAMMA CRICKET</h1>
+        <div class="brand-tagline">Premier Cricket Auction Platform</div>
+    </div>
+    
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <script>
+        // Global socket connection
+        const socket = io();
+        
+        // Global utility functions
+        function showAlert(message, type = 'success') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} fade-in`;
+            alertDiv.textContent = message;
+            
+            const container = document.querySelector('.dashboard-container, .auction-container, .login-container');
+            if (container) {
+                container.insertBefore(alertDiv, container.firstChild);
+                setTimeout(() => alertDiv.remove(), 5000);
+            }
+        }
+        
+        function formatCurrency(amount) {
+            return `₹${amount}L`;
+        }
+        
+        function formatTime(date) {
+            return new Date(date).toLocaleTimeString();
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,140 +1,316 @@
 {% extends "base.html" %}
+
+{% block title %}Admin Panel - Namma Cricket Auction{% endblock %}
+
 {% block content %}
-<div class="admin-container">
-    <div class="panel player-form">
-        <h2>Add Player</h2>
-        <form action="/add_player" method="POST" enctype="multipart/form-data">
-            <input type="text" name="name" placeholder="Player Name" required>
-            <input type="text" name="type" placeholder="Role" required>
-            <input type="text" name="runs" placeholder="Total Runs">
-            <input type="text" name="average" placeholder="Batting Average">
-            <input type="text" name="strike_rate" placeholder="Strike Rate">
-            <input type="file" name="image" accept="image/*">
-            <button type="submit">Add Player</button>
-        </form>
+<div class="dashboard-container">
+    <div class="welcome-section fade-in">
+        <h2>Admin Control Panel 🎛️</h2>
+        <p>Manage auction events, players, and control the live auction experience</p>
     </div>
-
-    <div class="panel auction-area">
-        <h2>Current Auction</h2>
-        <div class="auction-info">
-            <div id="currentPlayer" class="current-player"></div>
-            <div id="currentBid" class="current-bid">Current Bid: 25</div>
-            <div id="timer" class="timer">20</div>
+    
+    <!-- Event Management -->
+    <div class="event-management">
+        <h3>🎪 Event Management</h3>
+        
+        <div class="event-form">
+            <h4>Create New Auction Event</h4>
+            <form id="createEventForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="event_name">Event Name</label>
+                        <input type="text" id="event_name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="base_price">Base Price (₹L)</label>
+                        <input type="number" id="base_price" class="form-control" value="25" min="1" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="event_description">Description</label>
+                    <textarea id="event_description" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="max_players">Maximum Players</label>
+                    <input type="number" id="max_players" class="form-control" value="50" min="1" required>
+                </div>
+                <button type="submit" class="btn-primary">Create Event</button>
+            </form>
         </div>
-        <div class="auction-controls">
-            <button class="btn sold" onclick="markSold()">Mark Sold</button>
-            <button class="btn unsold" onclick="markUnsold()">Mark Unsold</button>
-            <button class="btn next-player" onclick="chooseNextPlayer()">Choose Next Player</button>
+        
+        <div style="margin-top: 30px;">
+            <h4>Existing Events</h4>
+            <ul class="event-list" id="eventsList">
+                {% for event_id, event in auction_events.items() %}
+                <li class="event-item">
+                    <div>
+                        <strong>{{ event.name }}</strong>
+                        <br>
+                        <small>{{ event.description }}</small>
+                        <br>
+                        <small>Players: {{ event.registered_players|length }}/{{ event.max_players }}</small>
+                    </div>
+                    <div>
+                        <span class="event-status {% if event.status == 'active' %}status-active{% else %}status-created{% endif %}">
+                            {{ event.status.upper() }}
+                        </span>
+                        {% if event.status != 'active' %}
+                        <button onclick="activateEvent('{{ event_id }}')" class="btn-primary" style="margin-left: 10px; padding: 5px 15px;">
+                            Activate
+                        </button>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
         </div>
-        <div id="biddingLog" class="bidding-log">
-            <h3>Bidding Log</h3>
-            <ul id="bidList"></ul>
+    </div>
+    
+    <div class="dashboard-grid">
+        <!-- Player Management -->
+        <div class="dashboard-card">
+            <h3>👥 Add Player Manually</h3>
+            <form action="/add_player" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <input type="text" name="name" class="form-control" placeholder="Player Name" required>
+                </div>
+                <div class="form-group">
+                    <select name="role" class="form-control" required>
+                        <option value="">Select Role</option>
+                        <option value="Batsman">Batsman</option>
+                        <option value="Bowler">Bowler</option>
+                        <option value="All-rounder">All-rounder</option>
+                        <option value="Wicket-keeper">Wicket-keeper</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" name="team" class="form-control" placeholder="Previous Team">
+                </div>
+                <div class="form-group">
+                    <input type="text" name="stats" class="form-control" placeholder="Key Statistics">
+                </div>
+                <div class="form-group">
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                </div>
+                <button type="submit" class="btn-primary">Add Player</button>
+            </form>
         </div>
-    </div>
-
-    <div class="panel players-list">
-        <h2>Players List</h2>
-        <ul id="playersList">
-            {% for player in players %}
-            <li>
-                {{ player.name }} - {{ player.type }} - Runs: {{ player.runs }}, Avg: {{ player.average }}, SR: {{ player.strike_rate }}
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <div class="panel sold-players">
-        <h2>Sold Players</h2>
-        <ul id="soldPlayersList"></ul>
-    </div>
-
-    <div class="panel unsold-players">
-        <h2>Unsold Players</h2>
-        <ul id="unsoldPlayersList"></ul>
-    </div>
-
-    <div class="panel bidders-info">
-        <h2>Bidders Capital</h2>
-        <ul id="biddersList"></ul>
+        
+        <!-- Current Players -->
+        <div class="dashboard-card">
+            <h3>📋 Available Players ({{ players|length }})</h3>
+            <div style="max-height: 300px; overflow-y: auto;">
+                {% for player in players %}
+                <div class="sold-player-item" style="border-left-color: #3b82f6;">
+                    <div class="sold-player-name">{{ player.name }}</div>
+                    <div class="sold-player-details">
+                        {{ player.role }} 
+                        {% if player.team %} | {{ player.team }}{% endif %}
+                        {% if player.stats %} | {{ player.stats }}{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Auction Control -->
+        <div class="dashboard-card">
+            <h3>🎯 Auction Control</h3>
+            <div id="auctionControl">
+                {% if current_event %}
+                    <div style="margin-bottom: 20px;">
+                        <strong>Active Event:</strong> {{ current_event.name }}<br>
+                        <strong>Base Price:</strong> ₹{{ current_event.base_price }}L
+                    </div>
+                    
+                    <div id="currentAuctionPlayer" style="margin-bottom: 20px;">
+                        <!-- Current player info will be displayed here -->
+                    </div>
+                    
+                    <div class="admin-controls">
+                        <button onclick="startNextAuction()" class="admin-btn btn-next">Start Next Player</button>
+                        <button onclick="markSold()" class="admin-btn btn-sold" id="soldBtn" disabled>Mark Sold</button>
+                        <button onclick="markUnsold()" class="admin-btn btn-unsold" id="unsoldBtn" disabled>Mark Unsold</button>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <button onclick="goToAuction()" class="btn-primary">Go to Auction Interface</button>
+                    </div>
+                {% else %}
+                    <p>No active event. Create and activate an event to start auctions.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Bidders Info -->
+        <div class="dashboard-card">
+            <h3>💰 Bidders Status</h3>
+            <ul class="bidder-list" id="biddersList">
+                {% for username, bidder in bidders.items() %}
+                <li class="bidder-item">
+                    <span class="bidder-name">{{ bidder.full_name }}</span>
+                    <span class="bidder-capital">₹{{ bidder.capital }}L</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <!-- Sold Players -->
+        <div class="dashboard-card">
+            <h3>✅ Sold Players</h3>
+            <div class="sold-players-list" id="soldPlayersList">
+                <!-- Sold players will be populated here -->
+            </div>
+        </div>
+        
+        <!-- Unsold Players -->
+        <div class="dashboard-card">
+            <h3>❌ Unsold Players</h3>
+            <div class="sold-players-list" id="unsoldPlayersList">
+                <!-- Unsold players will be populated here -->
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-const socket = io();
-let timer;
+let currentAuctionActive = false;
 
-function startTimer() {
-    if (timer) clearInterval(timer);
-    let time = 20;
-    document.getElementById('timer').textContent = time;
-    timer = setInterval(() => {
-        time--;
-        document.getElementById('timer').textContent = time;
-        if (time <= 0) clearInterval(timer);
-    }, 1000);
+// Create new event
+document.getElementById('createEventForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const eventData = {
+        name: document.getElementById('event_name').value,
+        description: document.getElementById('event_description').value,
+        max_players: document.getElementById('max_players').value,
+        base_price: document.getElementById('base_price').value
+    };
+    
+    try {
+        const response = await fetch('/create_event', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(eventData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('Event created successfully!', 'success');
+            e.target.reset();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert(data.message || 'Failed to create event', 'error');
+        }
+    } catch (error) {
+        showAlert('Connection error. Please try again.', 'error');
+    }
+});
+
+// Activate event
+async function activateEvent(eventId) {
+    try {
+        const response = await fetch(`/activate_event/${eventId}`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('Event activated successfully!', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert(data.message || 'Failed to activate event', 'error');
+        }
+    } catch (error) {
+        showAlert('Connection error. Please try again.', 'error');
+    }
+}
+
+// Auction control functions
+async function startNextAuction() {
+    try {
+        const response = await fetch('/start_auction', {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentAuctionActive = true;
+            document.getElementById('soldBtn').disabled = false;
+            document.getElementById('unsoldBtn').disabled = false;
+            showAlert('Auction started for next player!', 'success');
+        } else {
+            showAlert(data.message || 'Failed to start auction', 'error');
+        }
+    } catch (error) {
+        showAlert('Connection error. Please try again.', 'error');
+    }
 }
 
 function markSold() {
-    socket.emit('mark_sold');
+    if (currentAuctionActive) {
+        socket.emit('mark_sold');
+    }
 }
 
 function markUnsold() {
-    socket.emit('mark_unsold');
-    if (timer) clearInterval(timer);
-    document.getElementById('timer').textContent = "20";
-    document.getElementById('currentPlayer').innerHTML = "";
-    document.getElementById('currentBid').textContent = "Current Bid: 25";
-    document.getElementById('bidList').innerHTML = "";
-}
-
-function chooseNextPlayer() {
-    fetch('/start_auction', { method: 'POST' });
-    startTimer();
-}
-
-socket.on('auction_started', (player) => {
-    let html = `<strong>${player.name}</strong> (${player.type})<br>`;
-    html += `Runs: ${player.runs}, Avg: ${player.average}, SR: ${player.strike_rate}<br>`;
-    if (player.image) {
-        html += `<img src="/uploads/${player.image}" alt="${player.name}" width="100">`;
+    if (currentAuctionActive) {
+        socket.emit('mark_unsold');
     }
-    document.getElementById('currentPlayer').innerHTML = html;
-    document.getElementById('currentBid').textContent = `Current Bid: ${player.basePrice || 25}`;
-    document.getElementById('bidList').innerHTML = "";
-    startTimer();
+}
+
+function goToAuction() {
+    window.location.href = '/auction';
+}
+
+// Socket event listeners
+socket.on('auction_started', (data) => {
+    const playerInfo = `
+        <div style="padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+            <strong>${data.player.name}</strong> (${data.player.role})<br>
+            ${data.player.team ? `Previous Team: ${data.player.team}<br>` : ''}
+            ${data.player.stats ? `Stats: ${data.player.stats}<br>` : ''}
+            <strong>Base Price: ₹${data.base_price}L</strong>
+        </div>
+    `;
+    document.getElementById('currentAuctionPlayer').innerHTML = playerInfo;
+    currentAuctionActive = true;
+    document.getElementById('soldBtn').disabled = false;
+    document.getElementById('unsoldBtn').disabled = false;
+});
+
+socket.on('auction_end', (data) => {
+    currentAuctionActive = false;
+    document.getElementById('soldBtn').disabled = true;
+    document.getElementById('unsoldBtn').disabled = true;
+    document.getElementById('currentAuctionPlayer').innerHTML = '';
+    
+    if (data.status === 'sold') {
+        showAlert(`${data.player} sold to ${data.winner_name} for ₹${data.amount}L`, 'success');
+    } else {
+        showAlert(`${data.player} went unsold`, 'error');
+    }
+    
+    // Refresh the page to update lists
+    setTimeout(() => location.reload(), 2000);
 });
 
 socket.on('new_bid', (data) => {
-    document.getElementById('currentBid').textContent = `Current Bid: ${data.amount}`;
-    const li = document.createElement('li');
-    li.textContent = `${data.bidder} bid ${data.amount}`;
-    document.getElementById('bidList').appendChild(li);
+    showAlert(`${data.bidder_name} bid ₹${data.amount}L`, 'success');
 });
 
-socket.on('admin_update', (data) => {
-    const soldList = document.getElementById('soldPlayersList');
-    soldList.innerHTML = "";
-    data.sold_players.forEach(player => {
-        const li = document.createElement('li');
-        li.textContent = `${player.name} - ₹${player.sold_price}L by ${player.winner || 'N/A'}`;
-        soldList.appendChild(li);
-    });
+// Real-time updates
+socket.on('event_created', (event) => {
+    showAlert(`New event created: ${event.name}`, 'success');
+});
 
-    const unsoldList = document.getElementById('unsoldPlayersList');
-    unsoldList.innerHTML = "";
-    data.unsold_players.forEach(player => {
-        const li = document.createElement('li');
-        li.textContent = player.name;
-        unsoldList.appendChild(li);
-    });
-
-    const biddersList = document.getElementById('biddersList');
-    biddersList.innerHTML = "";
-    for (let bidder in data.bidders) {
-        const li = document.createElement('li');
-        li.textContent = `${bidder}: ₹${data.bidders[bidder].capital}L`;
-        biddersList.appendChild(li);
-    }
+socket.on('player_registered', (player) => {
+    showAlert(`New player registered: ${player.name}`, 'success');
 });
 </script>
 {% endblock %}

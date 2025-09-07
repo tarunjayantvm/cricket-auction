@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Namma Cricket Auction{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="welcome-section fade-in">
+        <h2>Welcome, {{ user.full_name }}! 🏏</h2>
+        <p>Ready to participate in the most exciting cricket auction experience</p>
+    </div>
+    
+    <div class="dashboard-grid">
+        <!-- Top Stories Section -->
+        <div class="dashboard-card">
+            <h3>🏆 Namma Cricket Top Stories</h3>
+            <div class="news-item">
+                <div class="news-title">IPL 2025 Mega Auction Approaches</div>
+                <div class="news-date">January 15, 2025</div>
+                <p style="margin-top: 8px; font-size: 0.9rem;">Teams prepare for the biggest auction in cricket history with record-breaking budgets.</p>
+            </div>
+            <div class="news-item">
+                <div class="news-title">Young Talents Shine in Domestic Circuit</div>
+                <div class="news-date">January 12, 2025</div>
+                <p style="margin-top: 8px; font-size: 0.9rem;">Emerging players showcase exceptional skills in recent tournaments.</p>
+            </div>
+            <div class="news-item">
+                <div class="news-title">Record Participation in Local Auctions</div>
+                <div class="news-date">January 10, 2025</div>
+                <p style="margin-top: 8px; font-size: 0.9rem;">Namma Cricket platform sees unprecedented user engagement.</p>
+            </div>
+        </div>
+        
+        <!-- Auction Platform Overview -->
+        <div class="dashboard-card">
+            <h3>🎯 Auction Platform Overview</h3>
+            <div style="margin-bottom: 15px;">
+                <strong>Platform Features:</strong>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    <li>Real-time bidding system</li>
+                    <li>Voice communication</li>
+                    <li>Live auction streaming</li>
+                    <li>Player statistics & analysis</li>
+                    <li>Multi-user support (up to 10 users)</li>
+                </ul>
+            </div>
+            <div>
+                <strong>Your Role:</strong> Bidder
+                <br>
+                <strong>Starting Capital:</strong> ₹1000L
+            </div>
+        </div>
+        
+        <!-- Live Auction Status -->
+        <div class="dashboard-card">
+            <h3>📡 Live Auction Event Status</h3>
+            <div id="auctionStatus">
+                {% if current_event %}
+                    <div class="event-status status-active">🔴 LIVE</div>
+                    <h4>{{ current_event.name }}</h4>
+                    <p>{{ current_event.description }}</p>
+                    <div style="margin-top: 15px;">
+                        <strong>Base Price:</strong> ₹{{ current_event.base_price }}L<br>
+                        <strong>Max Players:</strong> {{ current_event.max_players }}<br>
+                        <strong>Registered Players:</strong> {{ current_event.registered_players|length }}
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button onclick="joinAuction()" class="btn-primary" style="width: auto; padding: 10px 20px;">
+                            Join Live Auction
+                        </button>
+                        <button onclick="spectateAuction()" class="btn-primary" style="width: auto; padding: 10px 20px; margin-left: 10px; background: linear-gradient(90deg, #8b5cf6, #7c3aed);">
+                            Spectate
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="event-status" style="background: #6b7280;">⏸️ NO ACTIVE EVENT</div>
+                    <p>No auction event is currently active. Check back later or wait for admin to start an event.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Player Registration Section -->
+    {% if current_event %}
+    <div class="event-registration fade-in">
+        <h3>🏏 Register Player for Current Event</h3>
+        <p style="margin-bottom: 20px;">Register yourself or nominate a player for the current auction event.</p>
+        
+        <form id="playerRegistrationForm" class="registration-form" enctype="multipart/form-data">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="player_name">Player Name</label>
+                    <input type="text" id="player_name" name="name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="player_role">Role</label>
+                    <select id="player_role" name="role" class="form-control" required>
+                        <option value="">Select Role</option>
+                        <option value="Batsman">Batsman</option>
+                        <option value="Bowler">Bowler</option>
+                        <option value="All-rounder">All-rounder</option>
+                        <option value="Wicket-keeper">Wicket-keeper</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="player_team">Previous Team</label>
+                    <input type="text" id="player_team" name="team" class="form-control" placeholder="e.g., RCB, CSK, MI">
+                </div>
+                <div class="form-group">
+                    <label for="player_stats">Key Stats</label>
+                    <input type="text" id="player_stats" name="stats" class="form-control" placeholder="e.g., 2500 runs, 45 avg">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="player_image">Player Image (Optional)</label>
+                <input type="file" id="player_image" name="image" class="form-control" accept="image/*">
+            </div>
+            <button type="submit" class="btn-primary">Register Player</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function joinAuction() {
+    window.location.href = '/auction';
+}
+
+function spectateAuction() {
+    window.location.href = '/spectate';
+}
+
+// Player registration form
+document.getElementById('playerRegistrationForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    
+    try {
+        const response = await fetch('/register_for_event', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('Player registered successfully!', 'success');
+            e.target.reset();
+        } else {
+            showAlert(data.message || 'Registration failed', 'error');
+        }
+    } catch (error) {
+        showAlert('Connection error. Please try again.', 'error');
+    }
+});
+
+// Listen for real-time updates
+socket.on('event_created', (event) => {
+    showAlert(`New auction event created: ${event.name}`, 'success');
+});
+
+socket.on('event_activated', (event) => {
+    showAlert(`Auction event "${event.name}" is now live!`, 'success');
+    setTimeout(() => location.reload(), 2000);
+});
+
+socket.on('player_registered', (player) => {
+    showAlert(`New player registered: ${player.name}`, 'success');
+});
+</script>
+{% endblock %}
